@@ -1,0 +1,135 @@
+//测试类如下
+package com.darren.test.thread;
+
+public class ProducterConsumerThreadTest {
+
+    public static void main(String[] args) {
+        Resource resource = new Resource();
+        Provider provider = new Provider(resource);
+        Consumer consumer = new Consumer(resource);
+
+        provider.start();
+        consumer.start();
+
+    }
+
+}
+
+
+package com.darren.test.thread;
+
+public class Provider extends Thread {
+    private Resource resource;
+
+    public Provider(Resource resource) {
+        this.resource = resource;
+    }
+
+    public void run() {
+        while (true) {
+            try {
+                Thread.sleep((int) (Math.random() * 1000));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            resource.produce();
+            System.out.println("produce result = " + resource.getSpace());
+        }
+    }
+}
+
+
+package com.darren.test.thread;
+
+public class Consumer extends Thread {
+    private Resource resource;
+
+    public Consumer(Resource resource) {
+        this.resource = resource;
+    }
+
+    public void run() {
+        while (true) {
+            try {
+                Thread.sleep((int) (Math.random() * 1000));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            resource.consume();
+            System.out.println("consume result = " + resource.getSpace());
+        }
+    }
+}
+
+
+
+package com.darren.test.thread;
+
+public class Resource {
+    private static final int MAX_SPACE = 10;
+    private static final int MIN_SPACE = 0;
+    private int space = 0;
+
+    public synchronized void produce() {
+        if (space < MAX_SPACE) {
+            space++;
+            // 生产过后，立即通知消费线程可以消费
+            notify();
+        } else {
+            // 如果存储空间已满，那么停止生产，让出锁，等待消费线程消费
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    public synchronized void consume() {
+        if (space > MIN_SPACE) {
+            space--;
+            // 消费过后，立即通知生产线程可以生产
+            notify();
+        } else {
+            // 如果全部消费完，那么停止消费，让出锁，等待生产线程生产
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public int getSpace() {
+        return space;
+    }
+
+}
+
+线程生产消费问题主要学习线程之间通信，使用wait和notify方法。
+运行结果如下：
+produce result = 1
+consume result = 0
+produce result = 1
+consume result = 0
+produce result = 1
+consume result = 0
+produce result = 1
+consume result = 1
+consume result = 0
+produce result = 1
+consume result = 1
+consume result = 0
+produce result = 1
+consume result = 1
+produce result = 2
+produce result = 3
+consume result = 2
+consume result = 1
+produce result = 2
+consume result = 1
+produce result = 2
+consume result = 1
+produce result = 2
+...
